@@ -14,7 +14,7 @@ export const getCandidateByEmail = async (email) => {
   }
 };
 
-export const getPositions = async () => {
+export const getJobs = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/api/jobs/get-list`);
     return response.data;
