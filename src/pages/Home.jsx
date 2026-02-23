@@ -1,19 +1,23 @@
 import { Box, TextField, Button, Typography } from '@mui/material';
-import { getCandidateByEmail } from '../services/applicationService.js';
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { useCandidateLookup } from '../hooks/useCandidateLookup';
 
 function Home() {
   const [email, setEmail] = useState('');
-    const navigate = useNavigate();
-
+  const navigate = useNavigate();
+  const { findByEmail, loading } = useCandidateLookup();
 
   const handleSubmit = async () => {
     try {
-      const response = await getCandidateByEmail(email);
-      navigate('/opportunities'); 
+      const candidate = await findByEmail(email);
 
-      console.log(response);
+      localStorage.setItem(
+      'candidate',
+      JSON.stringify(candidate)
+    );
+      navigate('/jobs');
     } catch (error) {
       console.error(error);
     }
@@ -32,15 +36,14 @@ function Home() {
         sx={{
           display: 'grid',
           gridTemplateColumns: 'auto 350px',
-          columnGap: 15,
+          columnGap: 40,
           rowGap: 2,
           alignItems: 'center'
         }}
       >
-  
-
-
-          <Typography variant="h4">Ingresar</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          Ingresar
+        </Typography>
 
         <TextField
           label="Email"
@@ -50,13 +53,15 @@ function Home() {
         />
 
         <Box />
+
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
+          <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={!email}
+            disabled={loading || !email}
           >
-          Submit</Button>
+            {loading ? <LoadingSpinner size={20} /> : 'Submit'}
+          </Button>
         </Box>
       </Box>
     </Box>
