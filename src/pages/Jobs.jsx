@@ -33,7 +33,7 @@ function Jobs() {
 
     try {
       setSubmittingJobId(jobId);
-      await applyToJob(jobId, repoUrl, candidate);
+      await applyToJob(jobId, repoUrl, candidate.candidateId, candidate.uuid,candidate.applicationId);
       setSnackbar({ open: true, message: 'Postulación enviada', severity: 'success' });
       setRepoUrlsByJobId(prev => ({ ...prev, [jobId]: '' }));
     } catch (e) {
