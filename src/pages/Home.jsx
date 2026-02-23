@@ -26,7 +26,7 @@ function Home() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -35,14 +35,14 @@ function Home() {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'auto 350px',
+          gridTemplateColumns: 'auto 500px',
           columnGap: 40,
           rowGap: 2,
           alignItems: 'center'
         }}
       >
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Ingresar
+        <Typography variant="h3">
+          Sign in
         </Typography>
 
         <TextField
