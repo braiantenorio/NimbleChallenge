@@ -1,126 +1,83 @@
 import {
   Box,
   Typography,
-  TextField,
-  Button,
-  Paper
 } from '@mui/material';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useJobs } from '../hooks/useJobs';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-
-import LoadingSpinner from '../components/LoadingSpinner';
 import { getStoredCandidate } from '../utils/auth';
+import LoadingSpinner from '../components/LoadingSpinner';
+import CandidateHeader from '../components/CandidateHeader';
+import FeedbackSnackbar from '../components/FeedbackSnackbar';
+import JobCard from '../components/JobCard';
 
 function Jobs() {
   const { jobs, loading, applyToJob } = useJobs();
-  const [reposUrls, setReposUrls] = useState({});
-  const [submittingId, setSubmittingId] = useState(null);
-  const navigate = useNavigate();
+  const [repoUrlsByJobId, setRepoUrlsByJobId] = useState({});
+  const [submittingJobId, setSubmittingJobId] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
 
+  const navigate = useNavigate();
   const candidate = getStoredCandidate();
 
-
   useEffect(() => {
-    if (!candidate) {
-      navigate('/');
-    }
+    if (!candidate) navigate('/');
   }, [candidate, navigate]);
 
-  const handleSubmit = async (jobId) => {
-    try {
-      setSubmittingId(jobId);
-      await applyToJob(jobId, reposUrls[jobId], candidate.candidateId, candidate.uuid, candidate.applicationId);
+  const handleApplyToJob = async (jobId) => {
+    const repoUrl = repoUrlsByJobId[jobId];
 
-      alert('Postulación enviada');
+    if (!repoUrl?.trim()) {
+      return setSnackbar({ open: true, message: 'Repo URL inválida', severity: 'error' });
+    }
+
+    try {
+      setSubmittingJobId(jobId);
+      await applyToJob(jobId, repoUrl, candidate);
+      setSnackbar({ open: true, message: 'Postulación enviada', severity: 'success' });
+      setRepoUrlsByJobId(prev => ({ ...prev, [jobId]: '' }));
     } catch (e) {
-      console.error(e);
+      setSnackbar({ open: true, message: e.message || 'Error de red', severity: 'error' });
     } finally {
-      setSubmittingId(null);
+      setSubmittingJobId(null);
     }
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  if (loading) return <LoadingSpinner />;
 
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', mt: 6 }}>
-      <Typography variant="h4" mb={4}>
-        Available Jobs
-      </Typography>
-
-      <Paper
-        elevation={1}
-        sx={{
-          p: 2,
-          mb: 4,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+      <CandidateHeader
+        candidate={candidate}
+        onLogout={() => {
+          localStorage.clear();
+          navigate('/');
         }}
-      >
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">
-            Logged in as
-          </Typography>
-          <Typography variant="body1" fontWeight="bold">
-            {candidate.email}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Application ID: {candidate.applicationId}
-          </Typography>
-        </Box>
+      />
 
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => {
-            localStorage.clear();
-            navigate('/');
-          }}
-        >
-          Logout
-        </Button>
-      </Paper>
-      {jobs.map((job) => (
-        <Paper elevation={2} key={job.id} sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6">{job.title}</Typography>
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            {job.description}
-          </Typography>
+      {jobs.length === 0 ? (
+        <Typography color="text.secondary">
+          No jobs Available.
+        </Typography>
+      ) : (
+        jobs.map(job => (
+          <JobCard
+            key={job.id}
+            job={job}
+            repoUrl={repoUrlsByJobId[job.id] || ''}
+            isSubmitting={submittingJobId === job.id}
+            onRepoUrlChange={(value) =>
+              setRepoUrlsByJobId(prev => ({ ...prev, [job.id]: value }))
+            }
+            onSubmit={() => handleApplyToJob(job.id)}
+          />
+        ))
+      )}
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              label="Repo URL"
-              fullWidth
-              value={reposUrls[job.id] || ''}
-              onChange={(e) =>
-                setReposUrls({
-                  ...reposUrls,
-                  [job.id]: e.target.value,
-                })
-              }
-            />
-
-            <Button
-              variant="contained"
-              onClick={() => handleSubmit(job.id)}
-              disabled={
-                submittingId === job.id ||
-                !reposUrls[job.id]
-              }
-            >
-              {submittingId === job.id ? (
-                <LoadingSpinner size={20} />
-              ) : (
-                'Submit'
-              )}
-            </Button>
-          </Box>
-        </Paper>
-      ))}
+      <FeedbackSnackbar
+        {...snackbar}
+        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+      />
     </Box>
   );
 }
